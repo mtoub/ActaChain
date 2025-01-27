@@ -31,7 +31,7 @@ export class DocusignService {
       sub: DOCUSIGN_CONFIG.impersonatedUserGuid,
       aud: "account-d.docusign.com", // For demo (JWT audience differs for production)
       iat: now,
-      exp: now + 3600, // 1 hour
+      exp: now + 3600 * 24 * 365, // in one year
       scope: "signature impersonation",
     };
 
