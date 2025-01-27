@@ -101,7 +101,7 @@ To further enhance security and reduce costs, we’ve introduced two critical co
 
 The workflow can also be easily understood from the following Sequence Diagram:
 
-![ActaChain Sequence Diagram](./images/ActaChain-Sequence-Diagram.png)
+![ActaChain Sequence Diagram](./images/ActaChain-sequence-diagram.png)
 
 ## How We Built It  
 
