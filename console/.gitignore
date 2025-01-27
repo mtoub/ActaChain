@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/certs/*
 /.pnp
 .pnp.*
 .yarn/*
@@ -16,6 +17,9 @@
 # next.js
 /.next/
 /out/
+
+/console/certs/*
+certs
 
 # production
 /build
