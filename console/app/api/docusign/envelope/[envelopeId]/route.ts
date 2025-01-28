@@ -1,34 +1,32 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { EnvelopesApi, ApiClient } from "docusign-esign";
+import { type NextRequest, NextResponse } from "next/server";
+import { DocusignService } from "@/services/docusign";
 
-export async function GET(req: NextApiRequest, res: NextApiResponse) {
-  const { envelopeId } = req.query;
-  console.log("envelopeId", envelopeId);
-
+export async function GET(
+  request: NextRequest,
+  { params }: { params: any }
+) {
+  const envelopeId = params.envelopeId;
   if (!envelopeId || typeof envelopeId !== "string") {
-    return res.status(400).json({ error: "Invalid envelope ID" });
+    return NextResponse.json({ error: "Invalid envelope ID" }, { status: 400 });
   }
 
-  const apiClient = new ApiClient();
-  apiClient.setBasePath("https://demo.docusign.net/restapi");
-  apiClient.addDefaultHeader(
-    "Authorization",
-    `Bearer ${process.env.DOCUSIGN_ACCESS_TOKEN}`
-  );
-
-  const envelopesApi = new EnvelopesApi(apiClient);
+  const docusignService = new DocusignService();
+  const envelope = await docusignService.getEnvelopeStatus(envelopeId);
+  console.log("envelope:", envelope);
 
   try {
-    const envelope = await envelopesApi.getEnvelope(
-      process.env.DOCUSIGN_ACCOUNT_ID as string,
-      envelopeId
-    );
-    res.status(200).json(envelope);
+    return NextResponse.json(envelope);
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({ error: error.message });
+      return NextResponse.json(
+        { error: "envelope not found" },
+        { status: 404 }
+      );
     } else {
-      res.status(500).json({ error: "An error occurred" });
+      return NextResponse.json(
+        { error: "envelope not found" },
+        { status: 404 }
+      );
     }
   }
 }

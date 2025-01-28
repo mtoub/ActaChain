@@ -15,37 +15,48 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
+  tradeName: z
+    .string()
+    .min(2, { message: "Trade name must be at least 2 characters" }),
   buyerEmail: z.string().email({ message: "Invalid buyer email address" }),
   buyerName: z
     .string()
     .min(2, { message: "Buyer name must be at least 2 characters" }),
-  buyerCompany: z
-    .string()
-    .min(2, { message: "Buyer company must be at least 2 characters" }),
   sellerEmail: z.string().email({ message: "Invalid seller email address" }),
   sellerName: z
     .string()
     .min(2, { message: "Seller name must be at least 2 characters" }),
-  sellerCompany: z
-    .string()
-    .min(2, { message: "Seller company must be at least 2 characters" }),
 });
 
+// const defaultValuesForms = {
+//   tradeName: "Trade Name",
+//   buyerEmail: "youssefmaghzaz+buyer@gmail.com",
+//   buyerName: "Youssef Maghzaz (Buyer)",
+//   buyerCompany: "Buyer Inc",
+//   sellerEmail: "youssefmaghzaz+seller@gmail.com",
+//   sellerName: "Youssef Maghzaz (Seller)",
+//   sellerCompany: "Seller Inc",
+// };
+
+const defaultValuesForms = {
+  tradeName: "",
+  buyerEmail: "",
+  buyerName: "",
+  sellerEmail: "",
+  sellerName: "",
+};
 export default function CreateTradeForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [envelopeId, setEnvelopeId] = useState<string | null>(null);
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      buyerEmail: "",
-      buyerName: "",
-      buyerCompany: "",
-      sellerEmail: "",
-      sellerName: "",
-      sellerCompany: "",
-    },
+    defaultValues: defaultValuesForms,
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -63,13 +74,25 @@ export default function CreateTradeForm() {
       if (!response.ok) {
         throw new Error("Failed to create trade");
       }
+      toast({
+        title: "... Creating Trade",
+        description: "wait for the envelope to be created",
+      });
 
       const data = await response.json();
+      console.log("Trade created successfully!", data);
+
+      // wait for the envelope to be created
+      // wait for 1 second
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       toast({
         title: "Trade Created",
         description: `Your trade has been successfully created. Envelope ID: ${data.envelopeId}`,
       });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      setEnvelopeId(data.envelopeId);
+      router.push(`/tracker/envelope/${data.envelopeId}`);
       form.reset();
     } catch (error) {
       console.error("Error creating trade:", error);
@@ -85,7 +108,31 @@ export default function CreateTradeForm() {
 
   return (
     <Form {...form}>
+      {envelopeId && (
+        <div className=" p-4 rounded-lg border border-blue-600 bg-blue-100">
+          <p className="text-lg font-semibold">Trade created successfully</p>
+          <Link href={`/tracker/envelope/${envelopeId}`}>
+            <span className="text-blue-600">View Envelope</span>
+          </Link>
+        </div>
+      )}
+
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="space-y-6">
+          <FormField
+            control={form.control}
+            name="tradeName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Trade Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-6">
             <h2 className="text-2xl font-semibold">Buyer Information</h2>
@@ -96,7 +143,7 @@ export default function CreateTradeForm() {
                 <FormItem>
                   <FormLabel>Buyer Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="buyer@example.com" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -109,20 +156,7 @@ export default function CreateTradeForm() {
                 <FormItem>
                   <FormLabel>Buyer Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="buyerCompany"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Buyer Company</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Acme Corp" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -138,7 +172,7 @@ export default function CreateTradeForm() {
                 <FormItem>
                   <FormLabel>Seller Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="seller@example.com" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -151,13 +185,13 @@ export default function CreateTradeForm() {
                 <FormItem>
                   <FormLabel>Seller Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Jane Smith" {...field} />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
+            {/* <FormField
               control={form.control}
               name="sellerCompany"
               render={({ field }) => (
@@ -169,10 +203,15 @@ export default function CreateTradeForm() {
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            /> */}
           </div>
         </div>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          variant="outline"
+          className="bg-blue-600 text-white"
+        >
           {isSubmitting ? "Creating Trade..." : "Create Trade"}
         </Button>
       </form>

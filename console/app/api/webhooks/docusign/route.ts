@@ -1,18 +1,19 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { type NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { storeEnvelope } from "@/services/envelope";
+import { storeEnvelopeStatus } from "@/services/envelope.status";
+
+// This is a placeholder secret. In a real application, this should be securely stored.
+const DOCUSIGN_HMAC_SECRET =
+  process.env.DOCUSIGN_HMAC_SECRET || "your-secret-here";
 
 export async function POST(req: NextRequest) {
   const headersList = await headers();
   const signature = headersList.get("X-DocuSign-Signature-1");
-  console.log("DocuSign signature:", signature);
+  console.log("Signature:", signature);
 
   // if (!signature) {
-  //   return NextResponse.json(
-  //     { error: "Missing DocuSign signature" },
-  //     { status: 401 }
-  //   );
+  //   return NextResponse.json({ error: "Missing DocuSign signature" }, { status: 401 })
   // }
 
   // TODO: Verify the DocuSign signature here
@@ -54,15 +55,74 @@ export async function POST(req: NextRequest) {
 async function handleEnvelopeSent(data: any) {
   // TODO: Implement logic for when an envelope is sent
   console.log("Envelope sent:", data.envelopeId);
+  const envelopeId = data.envelopeId;
+  delete data.envelopeId;
+  await storeEnvelope(envelopeId, {
+    status: "sent",
+    timestamp: new Date().toISOString(),
+    ...data,
+  });
+  await storeEnvelopeStatus(envelopeId, {
+    status: 1,
+    timestamp: new Date().toISOString(),
+    envelopeSummary: data.envelopeSummary,
+  });
 }
 
 async function handleEnvelopeDelivered(data: any) {
   // TODO: Implement logic for when an envelope is delivered
   console.log("Envelope delivered:", data.envelopeId);
+  const envelopeId = data.envelopeId;
+  delete data.envelopeId;
+  await storeEnvelope(envelopeId, {
+    status: "delivered",
+    timestamp: new Date().toISOString(),
+  });
+  await storeEnvelopeStatus(envelopeId, {
+    status: 2,
+    timestamp: new Date().toISOString(),
+    envelopeSummary: data.envelopeSummary,
+  });
 }
 
 async function handleEnvelopeCompleted(data: any) {
   // TODO: Implement logic for when an envelope is completed
   console.log("Envelope completed:", data.envelopeId);
+  const envelopeId = data.envelopeId;
+  delete data.envelopeId;
+
   // This is where you might update your database or trigger other processes
+  await storeEnvelope(envelopeId, {
+    status: "completed",
+    timestamp: new Date().toISOString(),
+    ...data,
+  });
+
+  await storeEnvelopeStatus(envelopeId, {
+    status: 3,
+    timestamp: new Date().toISOString(),
+    envelopeSummary: data.envelopeSummary,
+  });
+
+  // fetch(
+  //   `http://localhost:3000/api/transactions?envelopeId=${envelopeId}&apiKey=${encodeURIComponent(
+  //     process.env.API_KEY as string
+  //   )}`,
+  //   {
+  //     method: "GET",
+  //   }
+  // );
+  const url = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.API_URL;
+  console.log("url", url);
+
+  fetch(
+    `${url}/api/transactions?envelopeId=${envelopeId}&apiKey=${encodeURIComponent(
+      process.env.API_KEY as string
+    )}`,
+    {
+      method: "GET",
+    }
+  );
 }

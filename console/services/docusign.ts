@@ -132,4 +132,14 @@ export class DocusignService {
 
     return response.data.envelopeId;
   }
+
+  async getEnvelopeEnvelopeId( envelopeId: string) {
+    const token = await this.getAccessToken();
+    const auditEventsUrl = `https://demo.docusign.net/restapi/v2.1/accounts/${process.env.DOCUSIGN_ACCOUNT_ID}/envelopes/${envelopeId}/audit_events`;
+    console.log(`Attempting to retrieve audit events from: ${auditEventsUrl}`);
+    const auditResponse = await axios.get(auditEventsUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return  auditResponse.data;
+  }
 }
